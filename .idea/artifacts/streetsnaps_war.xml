@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="streetsnaps:war">
+    <output-path>$PROJECT_DIR$/target</output-path>
+    <root id="archive" name="streetsnaps-1.0-SNAPSHOT.war">
+      <element id="artifact" artifact-name="streetsnaps:war exploded" />
+    </root>
+  </artifact>
+</component>

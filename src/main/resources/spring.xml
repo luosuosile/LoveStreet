@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:task="http://www.springframework.org/schema/task" xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:tx="http://www.springframework.org/schema/tx" xmlns:p="http://www.springframework.org/schema/p"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.3.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+  <!--加载配置文件-->
+  <context:property-placeholder ignore-unresolvable="true" file-encoding="utf-8" location="classpath:server.properties" />
+
+  <!-- 扫描注解 -->
+  <context:component-scan base-package="com.nk.streetsnaps" />
+
+  <!---->
+  <mvc:default-servlet-handler/>
+
+  <!-- 模型解析，在请求时为模型视图名称添加前后缀 比如在controller类中需要请求/WEB-INF/page/index.jsp文件，直接写index就可以了 -->
+  <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver" p:prefix="/WEB-INF/view/" p:suffix=".jsp" />
+
+  <!--配置数据源-->
+  <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+    <property name="url" value="${jdbc.url}" />
+    <property name="username" value="${jdbc.username}" />
+    <property name="password" value="${jdbc.password}" />
+
+    <property name="validationQuery" value="select 1"/>
+    <property name="testWhileIdle" value="true" />
+    <property name="testOnBorrow" value="false" />
+    <property name="testOnReturn" value="false" />
+  </bean>
+
+  <!-- 配置jdbcTemplate可使用jdbcTemplate来处理sql语句 -->
+  <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+    <property name="dataSource" ref="dataSource"></property>
+  </bean>
+
+  <!-- 输出转JSON支持 -->
+  <mvc:annotation-driven>
+    <mvc:message-converters register-defaults="true">
+      <bean class="com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter">
+        <property name="supportedMediaTypes" value="text/html;charset=UTF-8" />
+        <property name="features">
+          <array>
+            <value>WriteMapNullValue</value>
+            <value>WriteNullStringAsEmpty</value>
+            <value>DisableCircularReferenceDetect</value>
+          </array>
+        </property>
+      </bean>
+    </mvc:message-converters>
+  </mvc:annotation-driven>
+  <!-- 解决转json时，出现‘"$ref"’问题（FastJson循环引用的问题） -->
+  <bean id="DisableCircularReferenceDetect" class="org.springframework.beans.factory.config.FieldRetrievingFactoryBean">
+    <property name="staticField" value="com.alibaba.fastjson.serializer.SerializerFeature.DisableCircularReferenceDetect"></property>
+  </bean>
+
+  <!-- 使用annotation定义事务 -->
+  <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+    <property name="dataSource" ref="dataSource"></property>
+  </bean>
+  <tx:annotation-driven transaction-manager="transactionManager" proxy-target-class="true" />
+</beans>
+
