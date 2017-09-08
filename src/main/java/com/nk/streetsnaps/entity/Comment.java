@@ -7,6 +7,17 @@ public class Comment {
     private String content;
     private String create_time;
 
+    /******************************************************************/
+    private Integer praiseNum;
+
+    public Integer getPraiseNum() {
+        return praiseNum;
+    }
+
+    public void setPraiseNum(Integer praiseNum) {
+        this.praiseNum = praiseNum;
+    }
+
     public String getCreate_time() {
         return create_time;
     }

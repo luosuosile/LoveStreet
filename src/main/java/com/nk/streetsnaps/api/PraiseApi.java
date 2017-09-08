@@ -58,13 +58,19 @@ public class PraiseApi {
 
     }
 
-
+    /**
+     * 这是我自己加的吧
+     *返回某用户点赞的相册
+     * @param userId
+     * @return
+     */
     @RequestMapping("/switch/{userId}")
     @ResponseBody
     public ApiResponse getUserPraise(@PathVariable("userId") String userId){
         ApiResponse apiResponse = new ApiResponse();
         if(StringUtils.isBlank(userId)){
             apiResponse.setFailureMsg("3","userId未传递");
+            return apiResponse;
         }
 
         String querySql = "SELECT * FROM album where id in "+"(SELECT album_id from user_album_praise WHERE user_id = ?)";

@@ -34,6 +34,7 @@ public class ReadApi {
         ApiResponse apiResponse = new ApiResponse();
         if (StringUtils.isBlank(userId) || StringUtils.isBlank((albumId))) {
             apiResponse.setFailureMsg("3", "userId/albumId未传递");
+            return apiResponse;
         }
 
         String querySql = "SELECT count(*) FROM user_album_praise WHERE user_id = ? AND album_id = ?";
@@ -44,11 +45,11 @@ public class ReadApi {
 
         Integer count = jdbcTemplate.queryForObject(querySql, params.toArray(), Integer.class);
         if (count > 0) {
-            String updateSql = "UPDATE user_album_readed SET last_read_time = ? WHERE user_id = ? AND album_id = ?";
+            String updateSql = "UPDATE user_album_read SET last_read_time = ? WHERE user_id = ? AND album_id = ?";
             jdbcTemplate.update(updateSql,new Object[] {new Date(),albumId, userId});
             apiResponse.setSuccess();
         } else {
-            String insertSql = "INSERT INTO user_album_readed(user_id,album_id, last_read_time) VALUES(?,?,?)";
+            String insertSql = "INSERT INTO user_album_read(user_id,album_id, last_read_time) VALUES(?,?,?)";
             params.add(new Date());
             jdbcTemplate.update(insertSql, params.toArray());
             apiResponse.setSuccess();
@@ -69,9 +70,12 @@ public class ReadApi {
         ApiResponse apiResponse = new ApiResponse();
         if(StringUtils.isBlank(userId)){
             apiResponse.setFailureMsg("3","userId未传递");
+            return apiResponse;
         }
 
-        String querySql = "SELECT * FROM album where id in "+"(SELECT album_id from user_album_readed WHERE user_id = ?)";
+        String querySql = "SELECT *, " +
+                "FROM album where id in "+
+                "(SELECT album_id from user_album_read WHERE user_id = ?)";
         List<Object> params = new ArrayList<Object>();
         params.add(userId);
 
