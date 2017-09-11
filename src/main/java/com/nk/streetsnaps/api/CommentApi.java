@@ -30,15 +30,15 @@ public class CommentApi {
      * 没评论的时候怎么办没写
      * 输入套图ID，获取套图ID下面所有用户的评论
      * @param albumId
-     * @param pageNum1
-     * @param pageNum2
+     * @param pageNum
+     * @param pageSize
      * @return
      */
     @RequestMapping("/{albumId}/list")
     @ResponseBody
     public ApiResponse getList(@PathVariable("albumId") String albumId,
-                            @RequestParam(defaultValue = "1") Integer pageNum1,
-                            @RequestParam(defaultValue = "10") Integer pageNum2){
+                            @RequestParam(defaultValue = "0") Integer pageNum,
+                            @RequestParam(defaultValue = "10") Integer pageSize){
 
         ApiResponse apiResponse = new ApiResponse();
 
@@ -47,7 +47,7 @@ public class CommentApi {
             return apiResponse;
         }
         //
-        String sql = "SELECT count(*) FROM user_album_comment where  album_id = ?";
+        String sql = "SELECT count(*) FROM user_album_comment where  album_id = ?";//评论表中有没有某相册的评论数量
         List<Object> params = new ArrayList<Object>();
         params.add(albumId);
         Integer count = jdbcTemplate.queryForObject(sql,params.toArray(),Integer.class);
@@ -55,8 +55,8 @@ public class CommentApi {
             String querySql ="SELECT * ," +
                     "(SELECT count(*) FROM user_album_comment_praise WHERE comment_id = comment.id) AS praiseNum" +
                     " FROM user_album_comment AS comment where album_id = ? limit ?,?";
-            params.add(pageNum1);
-            params.add(pageNum2);
+            params.add(pageNum*pageSize);
+            params.add(pageSize);
             List<Comment> comments = jdbcTemplate.query(querySql,params.toArray(),new BeanPropertyRowMapper<Comment>(Comment.class));
             apiResponse.setSuccessData(comments);
             return apiResponse;
@@ -70,7 +70,6 @@ public class CommentApi {
         apiResponse.setSuccessData(comments);
 
         return apiResponse;
-
     }
 
     /**
@@ -85,7 +84,7 @@ public class CommentApi {
     @ResponseBody
     public ApiResponse getUserCommentList(@PathVariable("albumId") String albumId,
                                @PathVariable("userId") String userId,
-                               @RequestParam(defaultValue = "1") Integer pageNum,
+                               @RequestParam(defaultValue = "0") Integer pageNum,
                                @RequestParam(defaultValue = "10") Integer pageSize){
 
         ApiResponse apiResponse = new ApiResponse();
@@ -103,7 +102,10 @@ public class CommentApi {
         if(count > 0){
             String querySql ="SELECT *,"+
                     "(SELECT count(*) FROM user_album_comment_praise WHERE comment_id = comment.id) AS praiseNum" +
-                    " FROM user_album_comment AS comment where album_id = ? AND user_id = ?";
+                    " FROM user_album_comment AS comment where album_id = ? AND user_id = ?" +
+                    "LIMIT ?,?";
+            params.add(pageNum*pageSize);
+            params.add(pageSize);
             List<Comment> comments = jdbcTemplate.query(querySql,params.toArray(),new BeanPropertyRowMapper<Comment>(Comment.class));
             apiResponse.setSuccessData(comments);
             return apiResponse;
@@ -143,12 +145,12 @@ public class CommentApi {
         params.add(userId);
         params.add(userPraiseId);
         params.add(commentId);
-        Integer count = jdbcTemplate.queryForObject(sql,params.toArray(),Integer.class);
+        Integer count = jdbcTemplate.queryForObject(sql,params.toArray(),Integer.class);//是否大于0
 
 
         if(count > 0) {
 
-            String delSql = "DELETE FROM user_album_comment_praise WHERE album_id = ? AND user_id = ? AND user_praise_id = ? AND comment_id = ? ";
+            String delSql = "DELETE FROM user_album_comment_praise WHERE album_id = ? AND user_id = ? AND user_praise_id = ? AND comment_id = ? ";//删除点赞
             jdbcTemplate.update(delSql,params.toArray());
             apiResponse.setSuccessMsg("取消点赞请求成功" + String.valueOf(count));
         }

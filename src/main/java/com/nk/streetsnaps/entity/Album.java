@@ -5,10 +5,11 @@ import java.util.List;
 public class Album {
 
     private String id;
-    private String albumName;
-    private String imageUrl;
-    private String isPutAway;
+    private String name;
 
+    private String isPutAway;
+    private String picsNum;
+    private String firstPicture;
 
 
     /****************************************************************************************************/
@@ -18,6 +19,22 @@ public class Album {
     private Integer readAmount;
     private Integer praiseAmount;
     private Integer pictureAmount;
+
+    public String getPicsNum() {
+        return picsNum;
+    }
+
+    public void setPicsNum(String picsNum) {
+        this.picsNum = picsNum;
+    }
+
+    public String getFirstPicture() {
+        return firstPicture;
+    }
+
+    public void setFirstPicture(String firstPicture) {
+        this.firstPicture = firstPicture;
+    }
 
     public List<String> getTag() {
         return tag;
@@ -84,19 +101,11 @@ public class Album {
         this.id = id;
     }
 
-    public String getAlbumName() {
-        return albumName;
+    public String getName() {
+        return name;
     }
 
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageurl) {
-        this.imageUrl = imageurl;
-    }
-
-    public void setAlbumName(String albumName) {
-        this.albumName = albumName;
+    public void setName(String name) {
+        this.name = name;
     }
 }
