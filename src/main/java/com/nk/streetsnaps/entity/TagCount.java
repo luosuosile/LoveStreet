@@ -1,18 +1,8 @@
 package com.nk.streetsnaps.entity;
 
-
-public class Tag {
-
-    private String id;
+public class TagCount {
     private String pictureTag;
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
+    private String count;
 
     public String getPictureTag() {
         return pictureTag;
@@ -20,5 +10,13 @@ public class Tag {
 
     public void setPictureTag(String pictureTag) {
         this.pictureTag = pictureTag;
+    }
+
+    public String getCount() {
+        return count;
+    }
+
+    public void setCount(String count) {
+        this.count = count;
     }
 }

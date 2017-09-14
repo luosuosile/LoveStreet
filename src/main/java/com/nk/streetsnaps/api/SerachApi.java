@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/api/serach")
@@ -53,6 +55,7 @@ public class SerachApi {
             params2.add(1);
             jdbcTemplate.update(insertSql,params2.toArray());
         }
+        Map<String, Object> map = new HashMap<String, Object>();
         //下面这部分是有关于搜索关键字
         String sql = "SELECT *" +
                 " FROM album WHERE name like ? or content like ? LIMIT ?,?";

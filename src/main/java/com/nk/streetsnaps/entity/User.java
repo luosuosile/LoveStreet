@@ -4,7 +4,7 @@ public class User {
 
     private String id;
     private String deviceNumber;
-    private String nickname;
+    private String nickName;
     private String createTime;
     private String headPicture;
 
@@ -24,12 +24,12 @@ public class User {
         this.deviceNumber = deviceNumber;
     }
 
-    public String getNickname() {
-        return nickname;
+    public String getNickName() {
+        return nickName;
     }
 
-    public void setNickname(String nickname) {
-        this.nickname = nickname;
+    public void setNickName(String nickName) {
+        this.nickName = nickName;
     }
 
     public String getCreateTime() {

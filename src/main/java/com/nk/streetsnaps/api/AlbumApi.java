@@ -49,7 +49,7 @@ public class AlbumApi {
                 " (SELECT count(*) FROM user_album_comment WHERE album_id=album.id ) AS commentAmount, " +
                 " (SELECT count(*) FROM user_album_favorite WHERE album_id=album.id ) AS favoriteAmount, " +
                 " (SELECT count(*) FROM user_album_praise WHERE album_id=album.id ) AS praiseAmount, " +
-                " (SELECT count(*) FROM user_album_read WHERE album_id=album.id ) AS readAmount, " +
+                " (SELECT count(*) FROM user_album_read WHERE album_id=album.id ) AS readAmount " +
                 "FROM " +
                 " album AS album " +
                 "limit ?,?";

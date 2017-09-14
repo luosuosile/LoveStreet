@@ -3,7 +3,7 @@ package com.nk.streetsnaps.entity;
 public class Version {
 
     private String id;
-    private String number;
+    private String versionCode;
     private String url;
     private String description;
     private String createTime;
@@ -16,12 +16,12 @@ public class Version {
         this.id = id;
     }
 
-    public String getNumber() {
-        return number;
+    public String getVersionCode() {
+        return versionCode;
     }
 
-    public void setNumber(String number) {
-        this.number = number;
+    public void setVersionCode(String versionCode) {
+        this.versionCode = versionCode;
     }
 
     public String getUrl() {

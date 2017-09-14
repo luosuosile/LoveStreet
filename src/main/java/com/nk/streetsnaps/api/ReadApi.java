@@ -7,10 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -28,34 +25,36 @@ public class ReadApi {
      * @return
      */
 
-    @RequestMapping("/{userId}/{albumId}")//插入谁读了哪本书
+    @RequestMapping("/insertread")//插入谁读了哪本书
     @ResponseBody
-    public ApiResponse read(@PathVariable("userId") String userId,@PathVariable("albumId") String albumId) {
+    public ApiResponse read(@RequestParam(defaultValue = "null") String userId, @RequestParam(defaultValue = "null") String albumId) {
         ApiResponse apiResponse = new ApiResponse();
         if (StringUtils.isBlank(userId) || StringUtils.isBlank((albumId))) {
             apiResponse.setFailureMsg("3", "userId/albumId未传递");
             return apiResponse;
         }
 
-        String querySql = "SELECT count(*) FROM user_album_praise WHERE user_id = ? AND album_id = ?";
+        String querySql = "SELECT count(*) FROM user_album_read WHERE user_id = ? AND album_id = ?";
         List<Object> params = new ArrayList<Object>();
         params.add(userId);
         params.add(albumId);
-
 
         Integer count = jdbcTemplate.queryForObject(querySql, params.toArray(), Integer.class);
         if (count > 0) {
             String updateSql = "UPDATE user_album_read SET last_read_time = ? WHERE user_id = ? AND album_id = ?";
             jdbcTemplate.update(updateSql,new Object[] {new Date(),albumId, userId});
             apiResponse.setSuccess();
+            apiResponse.setData(0);
         } else {
             String insertSql = "INSERT INTO user_album_read(user_id,album_id, last_read_time) VALUES(?,?,?)";
             params.add(new Date());
             jdbcTemplate.update(insertSql, params.toArray());
             apiResponse.setSuccess();
+            apiResponse.setData(0);
 
         }
         return apiResponse;
+
     }
 
     /**
@@ -83,6 +82,4 @@ public class ReadApi {
         apiResponse.setSuccessData(album);
         return apiResponse;
     }
-
-
 }
