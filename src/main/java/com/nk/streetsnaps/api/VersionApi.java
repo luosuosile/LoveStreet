@@ -10,6 +10,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.ArrayList;
@@ -21,12 +22,21 @@ public class VersionApi {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @RequestMapping("/check")
+    @ResponseBody
+    public ApiResponse check(){
+        ApiResponse apiResponse = new ApiResponse();
+        String querySql = "SELECT * FROM version ORDER BY id DESC limit 1";
+        Version version = jdbcTemplate.queryForObject(querySql,new BeanPropertyRowMapper<Version>(Version.class));
+        apiResponse.setSuccessData(version);
+        return apiResponse;
+    }
+
     /**
      * 传入版本ID，用int类型比较最新版本ID，版本不同就更新，否则返回成功消息（已是最新）
      * @param versionId
      * @return
      */
-
     @RequestMapping("check/{versionId}")
     @ResponseBody
     public ApiResponse checkVersion(@PathVariable("versionId") String versionId){

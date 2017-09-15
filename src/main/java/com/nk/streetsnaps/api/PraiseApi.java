@@ -64,7 +64,7 @@ public class PraiseApi {
      * @param userId
      * @return
      */
-    @RequestMapping("/switch/{userId}")
+    @RequestMapping("/{userId}")
     @ResponseBody
     public ApiResponse getUserPraise(@PathVariable("userId") String userId){
         ApiResponse apiResponse = new ApiResponse();

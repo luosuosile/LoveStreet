@@ -62,7 +62,7 @@ public class FavoriteApi {
      * @return
      */
 
-    @RequestMapping("switch/{userId}")
+    @RequestMapping("/{userId}")
     @ResponseBody
     public ApiResponse getFavorite(@PathVariable("userId")String userId) {
         ApiResponse apiResponse = new ApiResponse();

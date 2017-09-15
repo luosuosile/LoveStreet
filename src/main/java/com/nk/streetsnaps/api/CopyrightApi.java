@@ -17,21 +17,23 @@ public class CopyrightApi  {
     private JdbcTemplate jdbcTemplate;
 
     /**
-     * 意见反馈接口
+     * 版权反馈接口
      * @param complaint
      * @return
      */
-    @RequestMapping("/{userId}")
+    @RequestMapping("/copyright")
     @ResponseBody
     public ApiResponse postComplaint(@RequestParam(defaultValue = "null") String albumId,
                                      @RequestParam(defaultValue = "null") String complaint,
-                                     @PathVariable("userId") String userId){
+                                     @RequestParam(defaultValue = "null") String userId,
+                                     @RequestParam(defaultValue = "null") String connectWay){
         ApiResponse apiResponse = new ApiResponse();
-        String sql = "Insert INTO user_album_complaint (album_id,complaint,user_id) VALUES (?,?,?)";
+        String sql = "Insert INTO user_album_complaint (album_id,complaint,user_id,connect_way) VALUES (?,?,?,?)";
         List<Object> params = new ArrayList<Object>();
         params.add(albumId);
         params.add(complaint);
         params.add(userId);
+        params.add(connectWay);
         jdbcTemplate.update(sql,params.toArray());
         apiResponse.setSuccess();
         apiResponse.setData(0);

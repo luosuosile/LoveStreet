@@ -72,7 +72,7 @@ public class ReadApi {
             return apiResponse;
         }
 
-        String querySql = "SELECT *, " +
+        String querySql = "SELECT *" +
                 "FROM album where id in "+
                 "(SELECT album_id from user_album_read WHERE user_id = ?)";
         List<Object> params = new ArrayList<Object>();

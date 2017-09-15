@@ -24,7 +24,9 @@ import sun.management.snmp.AdaptorBootstrap;
 
 import javax.print.DocFlavor;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/api/album")
@@ -86,7 +88,7 @@ public class AlbumApi {
                 " (SELECT count(*) FROM user_album_comment WHERE album_id=album.id ) AS commentAmount, " +
                 " (SELECT count(*) FROM user_album_favorite WHERE album_id=album.id ) AS favoriteAmount, " +
                 " (SELECT count(*) FROM user_album_praise WHERE album_id=album.id ) AS praiseAmount, " +
-                " (SELECT count(*) FROM user_album_read WHERE album_id=album.id ) AS readAmount, " +
+                " (SELECT count(*) FROM user_album_read WHERE album_id=album.id ) AS readAmount " +
                 "FROM " +
                 " album AS album ) AS A WHERE id = ?";
         List<Object> params = new ArrayList<Object>();
@@ -106,23 +108,61 @@ public class AlbumApi {
      */
     @RequestMapping("/{albumid}/picture")
     @ResponseBody
-    public ApiResponse getAlbumPicture(@PathVariable("albumid") String albumId){
+    public ApiResponse getAlbumPicture(@PathVariable("albumid") String albumId,
+                                        @RequestParam(defaultValue = "") String userId){
         ApiResponse apiResponse = new ApiResponse();
         if(StringUtils.isBlank(albumId)){
             apiResponse.setFailureMsg("3","albumId是必输的数值");
             return apiResponse;
         }
 
-        String sql ="SELECT * from picture where id in" +
+        String sql ="SELECT *," +
+                "(SELECT DISTINCT IF(EXISTS(SELECT * FROM user_album_praise WHERE user_id= ? AND album_id = ?),1,0)) AS praiseOrNot,"+//是否点赞
+                "(SELECT DISTINCT IF(EXISTS(SELECT * FROM user_album_favorite WHERE user_id= ? AND album_id = ?),1,0)) AS favoriteOrNot," +//是否收藏
+                " (SELECT count(*) FROM user_album_comment WHERE album_id=? ) AS commentAmount, " +
+                " (SELECT count(*) FROM user_album_favorite WHERE album_id=? ) AS favoriteAmount, " +
+                " (SELECT count(*) FROM user_album_praise WHERE album_id=? ) AS praiseAmount, " +
+                " (SELECT count(*) FROM user_album_read WHERE album_id=?) AS readAmount " +
+                " from picture where id in" +
                 "(SELECT picture_id from album_picture where album_id = ?)";
 
-
         List<Object> params = new ArrayList<Object>();
+        params.add(userId);
         params.add(albumId);
+        params.add(userId);
+        params.add(albumId);
+        params.add(albumId);
+        params.add(albumId);
+        params.add(albumId);
+        params.add(albumId);
+        params.add(albumId);
+
+//        Map<String , Object> map = new HashMap<String , Object>();
 
         List<Picture> PictureAlbum = jdbcTemplate.query(sql,params.toArray(),new BeanPropertyRowMapper<Picture>(Picture.class));
 
+//        map.put("picture_url",PictureAlbum);
+//
+//        String albumQuerySql =  "SELECT *, "+
+//                " (SELECT count(*) FROM user_album_comment WHERE album_id=? ) AS commentAmount, " +
+//                " (SELECT count(*) FROM user_album_favorite WHERE album_id=? ) AS favoriteAmount, " +
+//                " (SELECT count(*) FROM user_album_praise WHERE album_id=? ) AS praiseAmount, " +
+//                " (SELECT count(*) FROM user_album_read WHERE album_id=? ) AS readAmount " +
+//                " FROM album WHERE id = ?";
+//        List<Object> params6 = new ArrayList<Object>();
+//        params6.add(albumId);
+//        params6.add(albumId);
+//        params6.add(albumId);
+//        params6.add(albumId);
+//        params6.add(albumId);
+//
+//        Album album = jdbcTemplate.queryForObject(albumQuerySql,params6.toArray(),new BeanPropertyRowMapper<Album>(Album.class));
+//
+//        map.put("album",album);
+//        map.put("picture_url",PictureAlbum);
+
         //上面是返回图片地址，下面是给这个相册点击数加一
+
         //下面这部分有关于把用户搜索的关键字插入hot_word表中
         String checkSql = "SELECT DISTINCT IF(EXISTS(SELECT * FROM album_count WHERE album_id= ?),1,0)";
         List<Object> params3 = new ArrayList<Object>();
@@ -191,6 +231,9 @@ public class AlbumApi {
         apiResponse.setSuccess();
         return apiResponse;
     }
+
+
+
 
 //    /**
 //     * 通过套图url返回套图所有url

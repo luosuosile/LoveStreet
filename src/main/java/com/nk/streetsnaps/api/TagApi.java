@@ -57,6 +57,13 @@ public class TagApi {
         params.add((pageNum * pageSize));
         params.add(pageSize);
         List<Album> albums = jdbcTemplate.query(querySql, params.toArray(), new BeanPropertyRowMapper<Album>(Album.class));
+        for (Album album : albums) {
+            String sql = "SELECT picture_tag FROM tag WHERE id IN (SELECT tag_id FROM album_tag WHERE album_id = ?)";
+            List<Object> params2 = new ArrayList<Object>();
+            params2.add(album.getId());
+            List<String> tags = jdbcTemplate.queryForList(sql, params2.toArray(), String.class);
+            album.setTag(tags);
+        }
         apiResponse.setSuccess();
         apiResponse.setSuccessData(albums);
         return apiResponse;

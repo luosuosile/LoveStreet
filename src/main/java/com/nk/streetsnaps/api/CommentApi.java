@@ -3,166 +3,188 @@ package com.nk.streetsnaps.api;
 
 import com.nk.streetsnaps.entity.ApiResponse;
 import com.nk.streetsnaps.entity.Comment;
+import com.nk.streetsnaps.entity.SubComment;
+import com.nk.streetsnaps.util.IDUtil;
 import jdk.nashorn.internal.ir.ReturnNode;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-@Controller
+@RestController
 @RequestMapping("/api/comment")
 public class CommentApi {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-
     /**
-     * 现在的问题是一个用户可以给一个评论多次点赞
-     * 没评论的时候怎么办没写
-     * 输入套图ID，获取套图ID下面所有用户的评论
+     * 返回某书下面所有的评论
+     * 父评论列表（包含子评论）
      * @param albumId
      * @param pageNum
      * @param pageSize
      * @return
      */
     @RequestMapping("/{albumId}/list")
-    @ResponseBody
-    public ApiResponse getList(@PathVariable("albumId") String albumId,
-                            @RequestParam(defaultValue = "0") Integer pageNum,
-                            @RequestParam(defaultValue = "10") Integer pageSize){
-
+    public ApiResponse list(@PathVariable("albumId") String albumId, @RequestParam(value = "hot", defaultValue = "false")boolean hot,
+                            @RequestParam(defaultValue = "1") Integer pageNum, @RequestParam(defaultValue = "10") Integer pageSize,
+                            @RequestParam(defaultValue = "1") Integer subPageNum, @RequestParam(defaultValue = "3") Integer subPageSize,
+                            @RequestParam String userId){
         ApiResponse apiResponse = new ApiResponse();
-
-        if(StringUtils.isBlank(albumId)){
-            apiResponse.setFailureMsg("3","albumId未传递");
-            return apiResponse;
-        }
         //
-        String sql = "SELECT count(*) FROM user_album_comment where  album_id = ?";//评论表中有没有某相册的评论数量
+        String sql = "";
+        if (hot){
+            sql = "SELECT " +
+                    " uComment.*, u.nick_name,u.head_picture, " +
+                    " (SELECT count(*) FROM user_album_comment_praise WHERE uComment.id = comment_id) AS praiseAmount, " +
+                    " (SELECT COUNT(*) FROM user_album_comment_praise WHERE user_id=? and comment_id=uComment.id) AS isPraise " +
+                    " FROM " +
+                    " user_album_comment uComment " +
+                    " LEFT JOIN user u ON uComment.user_id = u.id " +
+                    " WHERE album_id = ?" +
+                    " AND uComment.id IN (" +
+                    " SELECT comment_id FROM( " +
+                    " SELECT comment_id from user_album_comment_praise GROUP BY comment_id ORDER BY COUNT(comment_id) DESC LIMIT ?,?)AS a ) ";
+        } else {
+            sql = "SELECT " +
+                    " uComment.*, u.nick_name,u.head_picture, " +
+                    " (SELECT count(*) FROM user_album_comment_praise WHERE uComment.id = comment_id) AS praiseAmount, " +
+                    " (SELECT COUNT(*) FROM user_album_comment_praise WHERE user_id=? and comment_id=uComment.id) AS isPraise " +
+                    " FROM " +
+                    " user_album_comment uComment " +
+                    " LEFT JOIN user u ON uComment.user_id = u.id " +
+                    " WHERE album_id = ?" +
+                    "ORDER BY create_time DESC"+//加了个根据时间倒序
+                    " LIMIT ?,?";
+        }
         List<Object> params = new ArrayList<Object>();
+        params.add(userId);
         params.add(albumId);
-        Integer count = jdbcTemplate.queryForObject(sql,params.toArray(),Integer.class);
-        if(count > 0){
-            String querySql ="SELECT * ," +
-                    "(SELECT count(*) FROM user_album_comment_praise WHERE comment_id = comment.id) AS praiseNum" +
-                    " FROM user_album_comment AS comment where album_id = ? limit ?,?";
-            params.add(pageNum*pageSize);
-            params.add(pageSize);
-            List<Comment> comments = jdbcTemplate.query(querySql,params.toArray(),new BeanPropertyRowMapper<Comment>(Comment.class));
-            apiResponse.setSuccessData(comments);
-            return apiResponse;
-        }
-        else{
+        params.add((pageNum - 1) * pageSize);
+        params.add(pageSize);
+        List<Comment> comments = jdbcTemplate.query(sql, params.toArray(), new BeanPropertyRowMapper<Comment>(Comment.class));
 
+        //是不是缺个时间倒序？
+        String sql2 = "SELECT " +
+                " uCommentSub.*, u.nick_name, " +
+//                "(SELECT count(*) FROM user_ebook_comment_praise WHERE uCommentSub.id = user_ebook_comment_praise.comment_id) AS praiseNum," +//加了个获取子评论点赞数量
+                " (SELECT nick_name from user WHERE id = uCommentSub.user_id) AS atNickname " +
+                "FROM " +
+                " user_album_comment_sub uCommentSub " +
+                "LEFT JOIN user u ON uCommentSub.user_id = u.id " +
+                "WHERE " +
+                " uCommentSub.parent_comment_id = ?" +
+                " ORDER BY create_time DESC" +
+                " LIMIT ?,?"; //只显示2条，还需要分页显示最新评论，还需要热评5条应该是父评论的
+        for (Comment comment : comments) {
+            Map<String , Object> map = new HashMap<String , Object>();
+            List<SubComment> subComments = jdbcTemplate.query(sql2,
+                    new Object[]{comment.getId(),(subPageNum - 1) * subPageSize,  subPageSize}, new BeanPropertyRowMapper<SubComment>(SubComment.class));
+            Integer total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM user_album_comment_sub WHERE parent_comment_id=?",new Object[]{comment.getId()}, Integer.class);
+            map.put("list", subComments);
+            map.put("total", total);
+            comment.setSubComments(map);
         }
-
-        List<Comment> comments = jdbcTemplate.query(sql,params.toArray(),new BeanPropertyRowMapper<Comment>(Comment.class));
 
         apiResponse.setSuccessData(comments);
-
         return apiResponse;
     }
 
     /**
-     * 获取某相册下某用户的所有评论
-     * @param albumId
+     * 评论点赞开关（只对父评论起作用）
      * @param userId
-     * @param pageNum
-     * @param pageSize
+     * @param commentId
      * @return
      */
-    @RequestMapping("/{albumId}/{userId}/list")
-    @ResponseBody
-    public ApiResponse getUserCommentList(@PathVariable("albumId") String albumId,
-                               @PathVariable("userId") String userId,
-                               @RequestParam(defaultValue = "0") Integer pageNum,
-                               @RequestParam(defaultValue = "10") Integer pageSize){
-
+    @RequestMapping("/praise/switch/{userId}/{commentId}")
+    public ApiResponse praise(@PathVariable("userId")String userId, @PathVariable("commentId")String commentId){
         ApiResponse apiResponse = new ApiResponse();
 
-        if(StringUtils.isBlank(albumId)){
-            apiResponse.setFailureMsg("3","albumId/userId未传递");
-            return apiResponse;
-        }
         //
-        String sql = "SELECT count(*) FROM user_album_comment where  album_id = ? AND user_id = ?";
+        String querySql = "SELECT count(*) FROM user_album_comment_praise WHERE user_id = ? AND comment_id = ?";
         List<Object> params = new ArrayList<Object>();
-        params.add(albumId);
         params.add(userId);
-        Integer count = jdbcTemplate.queryForObject(sql,params.toArray(),Integer.class);
+        params.add(commentId);
+
+        //
+        Integer count = jdbcTemplate.queryForObject(querySql, params.toArray(), Integer.class);
         if(count > 0){
-            String querySql ="SELECT *,"+
-                    "(SELECT count(*) FROM user_album_comment_praise WHERE comment_id = comment.id) AS praiseNum" +
-                    " FROM user_album_comment AS comment where album_id = ? AND user_id = ?" +
-                    "LIMIT ?,?";
-            params.add(pageNum*pageSize);
-            params.add(pageSize);
-            List<Comment> comments = jdbcTemplate.query(querySql,params.toArray(),new BeanPropertyRowMapper<Comment>(Comment.class));
-            apiResponse.setSuccessData(comments);
-            return apiResponse;
+            String delSql = "delete FROM user_album_comment_praise WHERE user_id = ? AND comment_id = ?";
+            jdbcTemplate.update(delSql, params.toArray());
+            apiResponse.setSuccessMsg("取消点赞成功");
+        } else {
+            String insertSql = "INSERT INTO user_album_comment_praise(user_id,comment_id) VALUES (?,?)";
+            jdbcTemplate.update(insertSql, params.toArray());
+            apiResponse.setSuccessMsg("点赞成功");
         }
-        else{
-
-        }
-
-        List<Comment> comments = jdbcTemplate.query(sql,params.toArray(),new BeanPropertyRowMapper<Comment>(Comment.class));
-
-        apiResponse.setSuccessData(comments);
-
         return apiResponse;
-
     }
 
     /**
-     * 对某相册里，某用户的评论的点赞开关
-     * 如何防止一个用户点赞多次，在可以多次评论的情况下，是否需要分表(未完成)
-     * 是否要增加个注册查看所有评论功能（非注册限制查看数量）
+     * 对评论进行再评论的情况
+     * @param userId
+     * @param commentId
+     * @param content
+     * @param subCommentId
      * @return
      */
-
-    @RequestMapping("/{albumId}/{userId}/{userPraiseId}/{commentId}/list")
-    @ResponseBody
-    public ApiResponse parise(@PathVariable("albumId") String albumId, @PathVariable("userId") String userId,
-                              @PathVariable("userPraiseId") String userPraiseId, @PathVariable("commentId") String commentId) {
+    @RequestMapping("/sub/{userId}/{commentId}")
+    public ApiResponse subComment(@PathVariable("userId")String userId, @PathVariable("commentId")String commentId,
+                                  @RequestParam String content, String subCommentId){
         ApiResponse apiResponse = new ApiResponse();
-        if(StringUtils.isBlank(albumId)||StringUtils.isBlank(userId)||StringUtils.isBlank(userPraiseId)||StringUtils.isBlank(commentId)){
-            apiResponse.setFailureMsg("3","xx为必传入数值");
-            return apiResponse;
-        }
-
-        String sql = "SELECT count(*) FROM user_album_comment_praise WHERE album_id = ? AND user_id = ? AND user_praise_id = ? AND comment_id = ?";
+        String sql = "INSERT INTO user_album_comment_sub(id, user_id, parent_comment_id,at_comment_id, content, create_time) VALUES (?, ?, ?, ?, ?, ?)";
         List<Object> params = new ArrayList<Object>();
-        params.add(albumId);
+        params.add(IDUtil.getUUID());
         params.add(userId);
-        params.add(userPraiseId);
         params.add(commentId);
-        Integer count = jdbcTemplate.queryForObject(sql,params.toArray(),Integer.class);//是否大于0
+        params.add(subCommentId);
+        params.add(content);
+        params.add(new Date());
 
-
-        if(count > 0) {
-
-            String delSql = "DELETE FROM user_album_comment_praise WHERE album_id = ? AND user_id = ? AND user_praise_id = ? AND comment_id = ? ";//删除点赞
-            jdbcTemplate.update(delSql,params.toArray());
-            apiResponse.setSuccessMsg("取消点赞请求成功" + String.valueOf(count));
-        }
-        else{
-            String insertSql = "INSERT INTO user_album_comment_praise (album_id,user_id,user_praise_id,comment_id) VALUES (?,?,?,?)";
-            jdbcTemplate.update(insertSql,params.toArray());
-            apiResponse.setSuccessMsg("点赞请求成功" + String.valueOf(count));
-        }
-
+        //
+        jdbcTemplate.update(sql, params.toArray());
+        apiResponse.setSuccess();
         return apiResponse;
     }
 
+    /**
+     * 谁评论了哪本书
+     * @return
+     */
+    @RequestMapping("/{userId}/{albumId}")
+    public ApiResponse comment(@PathVariable("userId")String userId, @PathVariable("albumId")String albumId,
+                               @RequestParam(value = "content")String content, @RequestParam(defaultValue = "0")Double rate){
+        ApiResponse apiResponse = new ApiResponse();
+
+        //
+        String sql = "INSERT INTO user_album_comment(id, user_id, album_id, content, rate, create_time) VALUES (?, ? ,?, ?, ?, ?)";
+        List<Object> params = new ArrayList<Object>();
+        params.add(IDUtil.getUUID());
+        params.add(userId);
+        params.add(albumId);
+        params.add(content);
+        params.add(rate);
+        params.add(new Date());
+
+        //
+        try {
+            int count = jdbcTemplate.update(sql, params.toArray());
+            if(count > 0){
+                apiResponse.setSuccess();
+            } else {
+                apiResponse.setFailureMsg("4","插入数据库失败");
+            }
+        } catch (Exception e){
+            apiResponse.setFailureMsg("4","插入数据库失败");
+        }
+        System.out.println();
+        return apiResponse;
+    }
 
 
 }

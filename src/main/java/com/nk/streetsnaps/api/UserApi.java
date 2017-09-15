@@ -17,8 +17,8 @@ public class UserApi {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @RequestMapping("/{deviceNumber}")
-    public ApiResponse postUserId(@PathVariable("deviceNumber") String deviceNumber){
+    @RequestMapping("/devnum")
+    public ApiResponse postUserId(@RequestParam(defaultValue = "null") String deviceNumber){
         ApiResponse apiResponse = new ApiResponse();
         if(StringUtils.isBlank(deviceNumber)){
             apiResponse.setFailureMsg("3","deviceNumber是必传数值");

@@ -6,6 +6,43 @@ public class Picture {
     private String tag_id;
     private String url;
 
+    /************************************************/
+    private String commentAmount;
+    private String favoriteAmount;
+    private String praiseAmount;
+    private String readAmount;
+
+    public String getCommentAmount() {
+        return commentAmount;
+    }
+
+    public void setCommentAmount(String commentAmount) {
+        this.commentAmount = commentAmount;
+    }
+
+    public String getFavoriteAmount() {
+        return favoriteAmount;
+    }
+
+    public void setFavoriteAmount(String favoriteAmount) {
+        this.favoriteAmount = favoriteAmount;
+    }
+
+    public String getPraiseAmount() {
+        return praiseAmount;
+    }
+
+    public void setPraiseAmount(String praiseAmount) {
+        this.praiseAmount = praiseAmount;
+    }
+
+    public String getReadAmount() {
+        return readAmount;
+    }
+
+    public void setReadAmount(String readAmount) {
+        this.readAmount = readAmount;
+    }
 
     public String getId() {
         return id;
